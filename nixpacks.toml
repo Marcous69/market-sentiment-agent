@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["bun install", "bun scripts/patch.js"]
+
+[start]
+cmd = "bun run src/index.ts"

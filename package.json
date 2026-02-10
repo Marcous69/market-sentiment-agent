@@ -1,0 +1,21 @@
+{
+  "name": "market-sentiment-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun start.js",
+    "postinstall": "bun scripts/patch.js || true"
+  },
+  "dependencies": {
+    "@lucid-agents/core": "latest",
+    "@lucid-agents/http": "latest",
+    "@lucid-agents/hono": "latest",
+    "@lucid-agents/payments": "latest",
+    "hono": "^4.11.8",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1"
+  }
+}

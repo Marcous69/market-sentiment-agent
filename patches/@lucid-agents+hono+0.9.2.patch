@@ -1,0 +1,22 @@
+diff --git a/node_modules/@lucid-agents/hono/dist/index.js b/node_modules/@lucid-agents/hono/dist/index.js
+index 1234567..abcdefg 100644
+--- a/node_modules/@lucid-agents/hono/dist/index.js
++++ b/node_modules/@lucid-agents/hono/dist/index.js
+@@ -1,6 +1,7 @@
+ import { Hono } from 'hono';
+ import { paymentMiddlewareFromConfig } from '@x402/hono';
+ import { HTTPFacilitatorClient } from '@x402/core/server';
+ import { resolvePrice, validatePaymentsConfig, extractSenderDomain, evaluateSender, extractPayerAddress, parsePriceAmount, findMostSpecificIncomingLimit } from '@lucid-agents/payments';
++import { ExactEvmScheme } from '@x402/evm/exact/server';
+ 
+ // src/app.ts
+@@ -113,7 +114,8 @@ function withPayments({
+     [`GET ${path}`]: getRoute,
+   };
+ 
+-  const baseMiddleware = middlewareFactory(routes, facilitatorClient, []);
++  const schemes = [{ network: 'eip155:*', server: new ExactEvmScheme() }];
++  const baseMiddleware = middlewareFactory(routes, facilitatorClient, schemes);
+   app.use(path, async (c, next) => {
+     const paymentHeader = c.req.header("PAYMENT");
+     const contextForPayment = paymentHeader && !c.req.header("X-PAYMENT") ? withPaymentHeader(c, paymentHeader) : c;
