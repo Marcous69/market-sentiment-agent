@@ -3,7 +3,7 @@ import { serve } from "@hono/node-server";
 import { paymentMiddleware, type Network } from "x402-hono";
 
 // Wallet address for receiving payments (NO private key needed on server!)
-const payTo = "0x7f9fb5F3d7C7506aAd68bcf0482fB5F25E76c1c6";
+const payTo = "0x647595A7456c7659329C8AA78a16f616325E47dd";
 
 // x402 config
 const facilitatorUrl = "https://facilitator.daydreams.systems";
