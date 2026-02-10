@@ -6,7 +6,7 @@ import { paymentMiddleware, type Network } from "x402-hono";
 const payTo = "0x7f9fb5F3d7C7506aAd68bcf0482fB5F25E76c1c6";
 
 // x402 config
-const facilitatorUrl = "https://facilitator.x402.rs";
+const facilitatorUrl = "https://facilitator.daydreams.systems";
 const network: Network = (process.env.NETWORK as Network) || "base";
 
 // === HELPER: Fetch sentiment data ===
