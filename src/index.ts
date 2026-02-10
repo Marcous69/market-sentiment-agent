@@ -1,21 +1,12 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { paymentMiddleware, type Network } from "x402-hono";
-import { privateKeyToAccount } from "viem/accounts";
 
-// Load private key from env (NEVER hardcode!)
-const PRIVATE_KEY = process.env.AGENT_WALLET_PRIVATE_KEY as `0x${string}`;
-if (!PRIVATE_KEY) {
-  console.error("❌ AGENT_WALLET_PRIVATE_KEY not set in .env");
-  process.exit(1);
-}
-
-const account = privateKeyToAccount(PRIVATE_KEY);
-console.log(`🔑 Wallet: ${account.address}`);
+// Wallet address for receiving payments (NO private key needed on server!)
+const payTo = "0x7f9fb5F3d7C7506aAd68bcf0482fB5F25E76c1c6";
 
 // x402 config
 const facilitatorUrl = "https://facilitator.x402.org";
-const payTo = account.address; // We receive payments to our own wallet
 const network: Network = (process.env.NETWORK as Network) || "base";
 
 // === HELPER: Fetch sentiment data ===
@@ -81,7 +72,7 @@ app.get("/", (c) => {
   return c.json({
     service: "Market Sentiment Agent",
     version: "2.0.0",
-    wallet: account.address,
+    wallet: payTo,
     endpoints: {
       "/": "Service info (free)",
       "/health": "Health check (free)",
@@ -217,7 +208,7 @@ serve({
 });
 
 console.log(`\n🚀 Market Sentiment Agent v2.0.0`);
-console.log(`💰 Wallet: ${account.address}`);
+console.log(`💰 Payments to: ${payTo}`);
 console.log(`🌐 Network: ${network}`);
 console.log(`📡 Port: ${port}`);
 console.log(`\nEndpoints:`);
