@@ -1,19 +1,22 @@
-import { createAgent } from '@lucid-agents/core';
-import { http } from '@lucid-agents/http';
-import { createAgentApp } from '@lucid-agents/hono';
-import { payments, paymentsFromEnv } from '@lucid-agents/payments';
-import { z } from 'zod';
+import { Hono } from "hono";
+import { serve } from "@hono/node-server";
+import { paymentMiddleware, type Network } from "x402-hono";
+import { privateKeyToAccount } from "viem/accounts";
 
-const agent = await createAgent({
-  name: 'market-sentiment-agent',
-  version: '1.0.0',
-  description: 'Market sentiment analysis (Fear & Greed Index 0-100) presented in simple bullet points',
-})
-  .use(http())
-  .use(payments({ config: paymentsFromEnv() }))
-  .build();
+// Load private key from env (NEVER hardcode!)
+const PRIVATE_KEY = process.env.AGENT_WALLET_PRIVATE_KEY as `0x${string}`;
+if (!PRIVATE_KEY) {
+  console.error("❌ AGENT_WALLET_PRIVATE_KEY not set in .env");
+  process.exit(1);
+}
 
-const { app, addEntrypoint } = await createAgentApp(agent);
+const account = privateKeyToAccount(PRIVATE_KEY);
+console.log(`🔑 Wallet: ${account.address}`);
+
+// x402 config
+const facilitatorUrl = "https://facilitator.x402.org";
+const payTo = account.address; // We receive payments to our own wallet
+const network: Network = (process.env.NETWORK as Network) || "base";
 
 // === HELPER: Fetch sentiment data ===
 async function fetchSentiment() {
@@ -56,33 +59,63 @@ function formatSentimentBullets(data: any): string[] {
   return bullets;
 }
 
-// === FREE ENDPOINT: Market Sentiment Summary ===
-addEntrypoint({
-  key: 'sentiment',
-  description: 'Get current market sentiment (Fear & Greed 0-100) in simple bullet points - FREE',
-  input: z.object({}),
-  handler: async () => {
+// === HTTP Server ===
+const app = new Hono();
+
+// Payment middleware - only /full-report is paid
+app.use(
+  paymentMiddleware(
+    payTo,
+    {
+      "/full-report": {
+        price: "$0.02",
+        network,
+      },
+    },
+    { url: facilitatorUrl }
+  )
+);
+
+// === FREE: Health check ===
+app.get("/", (c) => {
+  return c.json({
+    service: "Market Sentiment Agent",
+    version: "2.0.0",
+    wallet: account.address,
+    endpoints: {
+      "/": "Service info (free)",
+      "/health": "Health check (free)",
+      "/sentiment": "Market sentiment summary (free)",
+      "/full-report": "Comprehensive report (paid - $0.02)",
+    },
+    network,
+  });
+});
+
+app.get("/health", (c) => {
+  return c.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// === FREE: Market Sentiment Summary ===
+app.get("/sentiment", async (c) => {
+  try {
     const data = await fetchSentiment();
     const bullets = formatSentimentBullets(data);
     
-    return { 
-      output: { 
-        summary: bullets.join('\n'),
-        bullets,
-        raw_data: data.meta_index,
-        timestamp: data.timestamp
-      } 
-    };
-  },
+    return c.json({
+      summary: bullets.join('\n'),
+      bullets,
+      raw_data: data.meta_index,
+      timestamp: data.timestamp,
+    });
+  } catch (error) {
+    return c.json({ error: "Failed to fetch sentiment data" }, 500);
+  }
 });
 
-// === PAID ENDPOINT: Full Report ($0.02) ===
-addEntrypoint({
-  key: 'full-report',
-  description: 'Comprehensive sentiment report with all data points and analysis',
-  input: z.object({}),
-  price: "0.02",
-  handler: async () => {
+// === PAID: Full Report ($0.02) ===
+app.get("/full-report", async (c) => {
+  try {
     const data = await fetchSentiment();
     const bullets: string[] = [];
     
@@ -165,23 +198,28 @@ addEntrypoint({
     bullets.push(`⏰ Report Generated: ${new Date().toISOString()}`);
     bullets.push(`📡 Data Timestamp: ${data.timestamp}`);
     
-    return { 
-      output: { 
-        full_report: bullets.join('\n'),
-        summary_bullets: formatSentimentBullets(data),
-        raw_data: data 
-      } 
-    };
-  },
+    return c.json({
+      full_report: bullets.join('\n'),
+      summary_bullets: formatSentimentBullets(data),
+      raw_data: data,
+    });
+  } catch (error) {
+    return c.json({ error: "Failed to generate report" }, 500);
+  }
 });
 
+// Start server
 const port = Number(process.env.PORT ?? 3000);
 
-Bun.serve({
-  port,
+serve({
   fetch: app.fetch,
+  port,
 });
 
-console.log(`Market Sentiment Agent running on port ${port}`);
-console.log(`FREE: /entrypoints/sentiment/invoke`);
-console.log(`PAID: /entrypoints/full-report/invoke ($0.02)`);
+console.log(`\n🚀 Market Sentiment Agent v2.0.0`);
+console.log(`💰 Wallet: ${account.address}`);
+console.log(`🌐 Network: ${network}`);
+console.log(`📡 Port: ${port}`);
+console.log(`\nEndpoints:`);
+console.log(`  FREE:  GET /sentiment`);
+console.log(`  PAID:  GET /full-report ($0.02)`);
