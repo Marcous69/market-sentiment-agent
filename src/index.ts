@@ -61,6 +61,9 @@ app.use(
       "/full-report": {
         price: "$0.02",
         network,
+        config: {
+          description: "Comprehensive market sentiment report with global, crypto, and US stocks analysis. Includes fear/greed indices, cross-market comparison, and AI-powered trading context recommendations.",
+        },
       },
     },
     { url: facilitatorUrl }
