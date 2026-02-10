@@ -1,23 +1,15 @@
 import { wrapFetchWithPayment } from "x402-fetch";
-import { privateKeyToAccount } from "viem/accounts";
-import { http, createWalletClient } from "viem";
-import { base } from "viem/chains";
+import { createSigner } from "x402/types";
 
 const PRIVATE_KEY = process.env.AGENT_WALLET_PRIVATE_KEY as `0x${string}`;
-const account = privateKeyToAccount(PRIVATE_KEY);
-
-console.log("Payer wallet:", account.address);
-console.log("Receiver wallet: 0x647595A7456c7659329C8AA78a16f616325E47dd");
-
-const walletClient = createWalletClient({
-  account,
-  chain: base,
-  transport: http("https://mainnet.base.org"),
-});
-
-const x402Fetch = wrapFetchWithPayment(fetch, walletClient);
 
 async function test() {
+  console.log("Creating signer for 'base' network...");
+  const signer = await createSigner("base", PRIVATE_KEY);
+  console.log("Signer account:", signer.account?.address);
+
+  const x402Fetch = wrapFetchWithPayment(fetch, signer);
+
   console.log("\nMaking payment request...");
   
   const response = await x402Fetch(
