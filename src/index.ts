@@ -50,8 +50,54 @@ function formatSentimentBullets(data: any): string[] {
   return bullets;
 }
 
+// === AgentCard Manifest for XGate Discovery ===
+const agentCard = {
+  name: "Market Sentiment Agent",
+  description: "Real-time market sentiment analysis across crypto, US stocks, and global markets. Get fear/greed indices, cross-market divergence analysis, and AI-powered trading context.",
+  version: "2.0.0",
+  url: "https://market-sentiment-agent-production-a942.up.railway.app",
+  x402: {
+    enabled: true,
+    network: "base",
+    payTo: payTo,
+    facilitator: facilitatorUrl,
+    endpoints: [
+      {
+        path: "/full-report",
+        method: "GET",
+        price: "0.02",
+        asset: "USDC",
+        description: "Comprehensive market sentiment report with global, crypto, and US stocks analysis. Includes fear/greed indices, cross-market comparison, and trading recommendations."
+      }
+    ]
+  },
+  skills: [
+    {
+      name: "sentiment",
+      description: "Get free market sentiment summary",
+      endpoint: "/sentiment",
+      method: "GET",
+      free: true
+    },
+    {
+      name: "full-report",
+      description: "Comprehensive paid market analysis report",
+      endpoint: "/full-report",
+      method: "GET",
+      price: "$0.02 USDC"
+    }
+  ],
+  contact: {
+    github: "https://github.com/Marcous69"
+  }
+};
+
 // === HTTP Server ===
 const app = new Hono();
+
+// === AgentCard Manifest Endpoints ===
+app.get("/.well-known/agent.json", (c) => c.json(agentCard));
+app.get("/.well-known/agent-card.json", (c) => c.json(agentCard));
 
 // Payment middleware - only /full-report is paid
 app.use(
